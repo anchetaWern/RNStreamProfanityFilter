@@ -103,6 +103,30 @@ class Chat extends Component {
         }));
       });
 
+      channel.on('message.updated', async (event) => {
+        const { message } = this.getMessage(event.message);
+        if (message.user._id == this.user_id) {
+          if (message.user.warn_count < 3) {
+            Alert.alert("Profanity warning", "You will be banned indefinitely on the 3rd time you do this.");
+          }
+        }
+
+        this.setState(state => {
+          const messages = state.messages.map((item) => {
+            if (item._id == message._id) {
+              return { ...item, text: message.text };
+            } else {
+              return item;
+            }
+          });
+
+          return {
+            messages
+          }
+        });
+
+      });
+
     } catch (err) {
       console.log("error: ", err);
     }
@@ -124,7 +148,8 @@ class Chat extends Component {
       user: {
         _id: user.id,
         name: user.name,
-        avatar: user.image
+        avatar: user.image,
+        warn_count: user.warn_count
       }
     }
 
@@ -175,6 +200,7 @@ class Chat extends Component {
   }
   //
 
+
   renderUser = ({ item }) => {
     const online_status = (item.user.online) ? 'online' : 'offline';
 
@@ -184,6 +210,12 @@ class Chat extends Component {
           <View style={styles.inline_contents}>
             <View style={[styles.status_indicator, styles[online_status]]}></View>
             <Text style={styles.list_item_text}>{item.user.name}</Text>
+            {
+              item.user.warn_count > 2 &&
+              <View style={styles.banned}>
+                <Text style={styles.banned_text}>Banned</Text>
+              </View>
+            }
           </View>
         </View>
       </View>
@@ -191,11 +223,11 @@ class Chat extends Component {
   }
   //
 
+
   onSend = async ([message]) => {
     const message_response = await this.channel.sendMessage({
       text: message.text
     });
-
     if (message_response.message.type == 'error') {
       Alert.alert("Error", message_response.message.text);
     }
@@ -286,6 +318,16 @@ const styles = StyleSheet.create({
   },
   offline: {
     backgroundColor: '#606060'
+  },
+
+  banned: {
+    marginLeft: 10,
+    backgroundColor: '#cc0000',
+    padding: 3
+  },
+  banned_text: {
+    color: '#FFF',
+    fontSize: 12
   }
 });
 
